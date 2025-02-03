@@ -1,0 +1,61 @@
+name: Build and release docker image
+on:
+  workflow_dispatch:
+    inputs:
+      yanic-version:
+        required: true
+        type: string
+        description: yanic version tag
+        default: v1.6.2
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout this repo
+        uses: actions/checkout@v4
+
+      - name: Checkout FreifunkBremen/yanic @ ${{ inputs.yanic-version }}
+        uses: actions/checkout@v4
+        with:
+          repository: FreifunkBremen/yanic
+          path: ./yanic
+          ref: ${{ inputs.yanic-version }}
+          fetch-depth: '1'
+
+      - name: Install golang
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+
+      - name: Build yanic
+        run: go build -ldflags "-X github.com/FreifunkBremen/yanic/cmd.VERSION=${{ inputs.yanic-version }}" -v -o yanic
+        working-directory: ./yanic/
+
+      - name: Set up QEMU (for docker)
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/ffhi/yanic
+          tags: |
+            type=semver,pattern={{version}},value=${{ inputs.yanic-version }}
+            type=semver,pattern={{major}}.{{minor}},value=${{ inputs.yanic-version }}
+            type=semver,pattern={{major}},value=${{ inputs.yanic-version }}
+
+      - name: Build and push docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
