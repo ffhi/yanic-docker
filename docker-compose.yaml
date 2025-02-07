@@ -1,0 +1,10 @@
+services:
+  yanic:
+    image: yanic
+    network_mode: host
+    volumes:
+      - ./yanic.conf:/etc/yanic.conf
+      - yanic-logs:/var/log/
+
+volumes:
+  yanic-logs:

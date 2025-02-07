@@ -1,5 +1,4 @@
-FROM gcr.io/distroless/static-debian12:nonroot
+FROM alpine:latest
 
-COPY --chmod=755 --chown=root:root ./yanic/yanic /
-USER nonroot
+COPY yanic/yanic /yanic
 CMD [ "/yanic", "serve", "--config", "/etc/yanic.conf" ]
